@@ -1233,7 +1233,8 @@ function user_character_set_hide($char_id, $value) {
 
 // CREATE ACCOUNT
 function user_create_account($register_data, $maildata) {
-	array_walk($register_data, 'array_sanitize');
+        global $db;
+        array_walk($register_data, 'array_sanitize');
 
 	if (config('ServerEngine') == 'TFS_03' && config('salt') === true) {
 		$register_data['salt'] = generate_recovery_key(18);
@@ -1255,7 +1256,21 @@ function user_create_account($register_data, $maildata) {
 
 	mysql_insert("INSERT INTO `accounts` ($fields) VALUES ($data)");
 
-	$account_id = (isset($register_data['name'])) ? user_id($register_data['name']) : user_id($register_data['id']);
+        $account_id = (isset($register_data['name'])) ? user_id($register_data['name']) : user_id($register_data['id']);
+        if ($account_id !== false && isset($db) && $db instanceof PDO) {
+                $plainRecoveryKey = rk_generate_plaintext();
+                $hashedRecoveryKey = rk_hash($plainRecoveryKey);
+                $hint = rk_hint_from_plain($plainRecoveryKey);
+                $createdAt = date('Y-m-d H:i:s');
+                $stmt = $db->prepare('UPDATE `accounts` SET `recovery_key_hash` = :hash, `recovery_key_created_at` = :created_at, `recovery_key_revoked` = 0, `recovery_key_hint` = :hint WHERE `id` = :id');
+                $stmt->bindValue(':hash', $hashedRecoveryKey);
+                $stmt->bindValue(':created_at', $createdAt);
+                $stmt->bindValue(':hint', $hint);
+                $stmt->bindValue(':id', (int)$account_id, PDO::PARAM_INT);
+                $stmt->execute();
+                $_SESSION['one_time_recovery_key'] = $plainRecoveryKey;
+                rk_audit($db, (int)$account_id, 'GENERATE', array('hint' => $hint));
+        }
 	$activeKey = rand(100000000,999999999);
 	$active = ($maildata['register']) ? 0 : 1;
 	mysql_insert("INSERT INTO `znote_accounts` (`account_id`, `ip`, `created`, `active`, `active_email`, `activekey`, `flag`) VALUES ('$account_id', '$ip', '$created', '$active', '0', '$activeKey', '$flag')");
@@ -1657,30 +1672,32 @@ function user_id($username) {
 
 // Get user login ID from username and password
 function user_login_id($username, $password) {
-	$username = sanitize($username);
-	$password = sha1($password);
-	if (config('ServerEngine') !== 'OTHIRE')
-		$data = mysql_select_single("SELECT `id` FROM `accounts` WHERE `name`='$username' AND `password`='$password' LIMIT 1;");
-	else
-		$data = mysql_select_single("SELECT `id` FROM `accounts` WHERE `id`='$username' AND `password`='$password' LIMIT 1;");
-	if ($data !== false) return $data['id'];
-	else return false;
+        $username = sanitize($username);
+        if (config('ServerEngine') !== 'OTHIRE')
+                $data = mysql_select_single("SELECT `id`, `password` FROM `accounts` WHERE `name`='$username' LIMIT 1;");
+        else
+                $data = mysql_select_single("SELECT `id`, `password` FROM `accounts` WHERE `id`='$username' LIMIT 1;");
+        if ($data !== false && rk_password_matches($password, $data['password'])) return $data['id'];
+        else return false;
 }
 
 // TFS 0.3+ compatibility.
 function user_login_id_03($username, $password) {
-	if (config('salt') === true) {
+        if (config('salt') === true) {
 		if (user_exist($username)) {
 			$user_id = user_id($username);
 			$username = sanitize($username);
 
-			$data = mysql_select_single("SELECT `salt`, `id`, `name`, `password` FROM `accounts` WHERE `id`='$user_id';");
-			$salt = $data['salt'];
-			if (!empty($salt)) $password = sha1($salt.$password);
-			else $password = sha1($password);
-			return ($data !== false && $data['name'] == $username && $data['password'] == $password) ? $data['id'] : false;
-		} else return false;
-	} else return user_login_id($username, $password);
+                        $data = mysql_select_single("SELECT `salt`, `id`, `name`, `password` FROM `accounts` WHERE `id`='$user_id';");
+                        if ($data !== false && $data['name'] == $username) {
+                                $salt = $data['salt'];
+                                if (rk_password_matches($password, $data['password'], $salt)) {
+                                        return $data['id'];
+                                }
+                        }
+                        return false;
+                } else return false;
+        } else return user_login_id($username, $password);
 }
 
 // Get character ID from character name
@@ -1710,25 +1727,27 @@ function user_character_hide($username) {
 
 // Login with a user. (TFS 0.2)
 function user_login($username, $password) {
-	$username = sanitize($username);
-	$password = sha1($password);
-	if (config('ServerEngine') !== 'OTHIRE')
-		$data = mysql_select_single("SELECT `id` FROM accounts WHERE name='$username' AND password='$password';");
-	else
-		$data = mysql_select_single("SELECT `id` FROM accounts WHERE id='$username' AND password='$password';");
-	return ($data !== false) ? $data['id'] : false;
+        $username = sanitize($username);
+        if (config('ServerEngine') !== 'OTHIRE')
+                $data = mysql_select_single("SELECT `id`, `password` FROM accounts WHERE name='$username' LIMIT 1;");
+        else
+                $data = mysql_select_single("SELECT `id`, `password` FROM accounts WHERE id='$username' LIMIT 1;");
+        return ($data !== false && rk_password_matches($password, $data['password'])) ? $data['id'] : false;
 }
 
 // Login a user with TFS 0.3 compatibility
 function user_login_03($username, $password) {
 	if (config('salt') === true) {
 		$username = sanitize($username);
-		$data = mysql_select_single("SELECT `salt`, `id`, `password`, `name` FROM `accounts` WHERE `name`='$username';");
-		$salt = $data['salt'];
-		if (!empty($salt)) $password = sha1($salt.$password);
-		else $password = sha1($password);
-		return ($data !== false && $data['name'] == $username && $data['password'] == $password) ? $data['id'] : false;
-	} else return user_login($username, $password);
+                $data = mysql_select_single("SELECT `salt`, `id`, `password`, `name` FROM `accounts` WHERE `name`='$username';");
+                if ($data !== false && $data['name'] == $username) {
+                        $salt = $data['salt'];
+                        if (rk_password_matches($password, $data['password'], $salt)) {
+                                return $data['id'];
+                        }
+                }
+                return false;
+        } else return user_login($username, $password);
 }
 
 // Verify that user is logged in
