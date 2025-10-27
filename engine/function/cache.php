@@ -126,14 +126,25 @@ class Cache
 	 * @access public
 	 * @return void
 	**/
-	public function save() {
-		if ($this->_memory) {
-			return apcu_store($this->_file, $this->_content, $this->_lifespan);
-		}
-		$handle = fopen($this->_file, 'w');
-		fwrite($handle, $this->_content);
-		fclose($handle);
-	}
+        public function save() {
+                if ($this->_memory) {
+                        return apcu_store($this->_file, $this->_content, $this->_lifespan);
+                }
+                $directory = dirname($this->_file);
+                if (!is_dir($directory)) {
+                        if (!mkdir($directory, 0777, true) && !is_dir($directory)) {
+                                throw new RuntimeException('Unable to create cache directory: ' . $directory);
+                        }
+                }
+
+                $handle = fopen($this->_file, 'w');
+                if ($handle === false) {
+                        throw new RuntimeException('Unable to open cache file for writing: ' . $this->_file);
+                }
+
+                fwrite($handle, $this->_content);
+                fclose($handle);
+        }
 
 
 	/**
