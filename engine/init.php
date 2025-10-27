@@ -24,7 +24,7 @@ $accQueriesData = array();
 
 session_start();
 ob_start();
-require_once 'config.php';
+require_once __DIR__ . '/../config.php';
 $sessionPrefix = $config['session_prefix'];
 if ($config['paypal']['enabled'] || $config['use_captcha']) {
 	$curlcheck = extension_loaded('curl');
@@ -39,7 +39,7 @@ if ($config['use_captcha'] && !extension_loaded('openssl')) {
 if (!isset($config['TFSVersion'])) $config['TFSVersion'] = &$config['ServerEngine'];
 if (!isset($config['ServerEngine'])) $config['ServerEngine'] = &$config['TFSVersion'];
 
-require_once 'database/connect.php';
+require_once __DIR__ . '/database/connect.php';
 
 try {
         $dbDsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $config['sqlHost'], $config['sqlDatabase']);
@@ -51,13 +51,13 @@ try {
         die('Database connection failed.');
 }
 
-require_once 'recovery_key.php';
-require_once 'function/general.php';
-require_once 'function/users.php';
-require_once 'function/cache.php';
-require_once 'function/mail.php';
-require_once 'function/token.php';
-require_once 'function/itemparser/itemlistparser.php';
+require_once __DIR__ . '/recovery_key.php';
+require_once __DIR__ . '/function/general.php';
+require_once __DIR__ . '/function/users.php';
+require_once __DIR__ . '/function/cache.php';
+require_once __DIR__ . '/function/mail.php';
+require_once __DIR__ . '/function/token.php';
+require_once __DIR__ . '/function/itemparser/itemlistparser.php';
 
 if (isset($_SESSION['token'])) {
 	$_SESSION['old_token'] = $_SESSION['token'];
