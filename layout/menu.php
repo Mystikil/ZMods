@@ -8,14 +8,15 @@
 						<li><a href="changelog.php">Changelog</a> </li>
 					</ul>
 				</li>
-				<li><a id="accountLink" href="myaccount.php"><i class="fa fa-user-circle"></i> Account</a>
-					<ul>
-						<li><a href="downloads.php">Downloads</a> </li>
-						<li><a href="sub.php?page=recover">Lost account</a> </li>
-						<li><a href="myaccount.php">My account</a> </li>
-						<li><a href="register.php">Register</a> </li>
-					</ul>
-				</li>
+                                <li><a id="accountLink" href="myaccount.php"><i class="fa fa-user-circle"></i> Account</a>
+                                        <ul>
+                                                <li><a href="downloads.php">Downloads</a> </li>
+                                                <li><a href="pages/recover-account.php">Recover Account</a> </li>
+                                                <li><a href="myaccount.php">My account</a> </li>
+                                                <li><a href="pages/account-recovery-key.php">Recovery Key</a> </li>
+                                                <li><a href="register.php">Register</a> </li>
+                                        </ul>
+                                </li>
 				<li><a href="onlinelist.php"><i class="fa fa-users"></i> Community</a>
 					<ul>
 						<li><a href="sub.php?page=search">Characters</a> </li>
@@ -37,12 +38,12 @@
 						<li><a href="spells.php">Spells</a> </li>
 					</ul>
 				</li>
-				<li><a href="support.php"><i class="fa fa-info-circle"></i> Support</a>
-					<ul>
-						<li><a href="helpdesk.php">Helpdesk</a> </li>
-						<li><a href="sub.php?page=recover">Lost account</a> </li>
-					</ul>
-				</li>
+                                <li><a href="support.php"><i class="fa fa-info-circle"></i> Support</a>
+                                        <ul>
+                                                <li><a href="helpdesk.php">Helpdesk</a> </li>
+                                                <li><a href="pages/recover-account.php">Recover Account</a> </li>
+                                        </ul>
+                                </li>
 				<li><a href="shop.php"><i class="fa fa-shopping-cart"></i> Shop</a>
 					<ul>
 						<li><a href="buypoints.php">Buy points</a> </li>

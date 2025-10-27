@@ -95,13 +95,24 @@ if (empty($_POST) === false) {
 <h1>Register Account</h1>
 <?php
 if (isset($_GET['success']) && empty($_GET['success'])) {
-	if ($config['mailserver']['register']) {
-		?>
-		<h1>Email authentication required</h1>
-		<p>We have sent you an email with an activation link to your submitted email address.</p>
-		<p>If you can't find the email within 5 minutes, check your <strong>junk/trash inbox (spam filter)</strong> as it may be mislocated there.</p>
-		<?php
-	} else echo 'Congratulations! Your account has been created. You may now login to create a character.';
+        if ($config['mailserver']['register']) {
+                ?>
+                <h1>Email authentication required</h1>
+                <p>We have sent you an email with an activation link to your submitted email address.</p>
+                <p>If you can't find the email within 5 minutes, check your <strong>junk/trash inbox (spam filter)</strong> as it may be mislocated there.</p>
+                <?php
+        } else echo 'Congratulations! Your account has been created. You may now login to create a character.';
+        if (isset($_SESSION['one_time_recovery_key']) && !empty($_SESSION['one_time_recovery_key'])) {
+                $displayKey = htmlspecialchars($_SESSION['one_time_recovery_key']);
+                unset($_SESSION['one_time_recovery_key']);
+                ?>
+                <div class="recovery-key-notice">
+                        <h2>Your Recovery Key</h2>
+                        <p><strong><?php echo $displayKey; ?></strong></p>
+                        <p>Please write this key down or store it somewhere safe. It will not be shown again.</p>
+                </div>
+                <?php
+        }
 } elseif (isset($_GET['authenticate']) && empty($_GET['authenticate'])) {
 	// Authenticate user, fetch user id and activation key
 	$auid = (isset($_GET['u']) && (int)$_GET['u'] > 0) ? (int)$_GET['u'] : false;

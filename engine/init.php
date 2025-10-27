@@ -1,5 +1,9 @@
 <?php if (version_compare(phpversion(), '5.6', '<')) die('PHP version 5.6 or higher is required.');
 
+if (!defined('INITIALIZED')) {
+        define('INITIALIZED', true);
+}
+
 $l_time = microtime(true);
 $l_start = $l_time;
 
@@ -36,6 +40,18 @@ if (!isset($config['TFSVersion'])) $config['TFSVersion'] = &$config['ServerEngin
 if (!isset($config['ServerEngine'])) $config['ServerEngine'] = &$config['TFSVersion'];
 
 require_once 'database/connect.php';
+
+try {
+        $dbDsn = sprintf('mysql:host=%s;dbname=%s;charset=utf8mb4', $config['sqlHost'], $config['sqlDatabase']);
+        $db = new PDO($dbDsn, $config['sqlUser'], $config['sqlPassword'], array(
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+        ));
+} catch (PDOException $e) {
+        die('Database connection failed.');
+}
+
+require_once 'recovery_key.php';
 require_once 'function/general.php';
 require_once 'function/users.php';
 require_once 'function/cache.php';
