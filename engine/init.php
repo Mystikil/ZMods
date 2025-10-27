@@ -166,7 +166,7 @@ $filename = explode('/', $_SERVER['SCRIPT_NAME']);
 $filename = $filename[count($filename) - 1];
 $page_filename = str_replace('.php', '', $filename);
 if ($config['allowSubPages']) {
-	require_once 'layout/sub.php';
+        require_once __DIR__ . '/../layout/sub.php';
 	if (isset($subpages) && !empty($subpages)) {
 		foreach ($subpages as $page) {
 			if ($page['override'] && $page['file'] === $filename) {
